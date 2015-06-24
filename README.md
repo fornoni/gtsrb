@@ -3,6 +3,16 @@
 a.k.a German Traffic Sign Recognition Benchmark :de: :no_entry: :no_bicycles:
 :no_entry_sign: ...
 
+## Usage
+Main pre-requisite: torch7. Additional pre-requisites for the download script: bash, wget, unzip. 
+
+1. Clone the repository
+2. Download and unpack the data, using:
+	`$ getData.sh some_dir`
+   where some_dir is a directory where you want the dataset to be downloaded / unzipped
+3. Run the Convolutional Neural Network, using:
+	`$ th main.lua -data some_dir`
+
 ## Goal
 
 Use [Torch](http://torch.ch/) to train and evaluate a 2-stage convolutional
@@ -31,14 +41,3 @@ neural network able to classify German traffic sign images (43 classes):
 
 `http://benchmark.ini.rub.de/Dataset/GTSRB_Final_Test_Images.zip` (84 MB)
 `http://benchmark.ini.rub.de/Dataset/GTSRB_Final_Test_GT.zip` (98 kB)
-
-
-## Usage
-Main pre-requisite: torch7. Additional pre-requisites for the download script: bash, wget, unzip. 
-
-1. Clone the repository
-2. Download and unpack the data, using:
-    `$ getData.sh some_dir`
- where some_dir is a directory where you want the dataset to be downloaded / unzipped
-3. Run the Convolutional Neural Network, using:
-    `$ th main.lua -data some_dir`

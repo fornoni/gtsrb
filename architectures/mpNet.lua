@@ -38,7 +38,6 @@ function mpNet:getModel()
     local table = nn.tables.random(self.nmaps[1],self.nmaps[2],torch.round(self.nmaps[1]*self.connTableDensity))
     self.net:add(nn.SpatialConvolutionMap(table, self.filtsize[2], self.filtsize[2]))
   end
---  self.net:add(nn.Dropout(self.dropoutP))
   self.net:add(nn.ReLU())
   self.net:add(nn.SpatialMaxPooling(self.poolsize,self.poolsize,self.poolsize,self.poolsize))
   self.net:add(nn.Dropout(self.dropoutP[2]))

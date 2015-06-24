@@ -16,7 +16,7 @@ require("architectures." .. opt.arch)
 local function main()
   -- sets GTSR data folders
   local data_dir=opt.data
-  local log_dir = data_dir .. '/../results'
+  local log_dir = data_dir .. '/results'
 
   -- gets the training and testing data
   local trainData,testData=geGTSRtData(data_dir)
