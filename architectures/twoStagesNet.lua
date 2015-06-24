@@ -35,8 +35,19 @@ function twoStagesNet:__init(dataset)
   -- default loss function
   self.loss= nn.ClassNLLCriterion();
 
-  -- the size of the first convolutional layer
+  -- the size of the feature maps in the first convolutional layer
   self.l0_mapsize=((self.width-self.filtsize[1]+1)/self.poolsize)
-  -- the size of the second convolutional layer 
+  -- the size of the feature maps in the second convolutional layer 
   self.l1_mapsize=((self.l0_mapsize-self.filtsize[2]+1)/self.poolsize)
+  -- the size of the output of the second convolutional layer, when flattened down 
+  self.l1_flatsize=self.nmaps[2]*self.l1_mapsize*self.l1_mapsize
+  
+  -- if true it means tha the network has already been turned into a feature extractor
+  self.featureExtractor=false
+end
+
+--[[ returns a copy of the network that can be used as a feature extractor ]]--
+function twoStagesNet:toFeatureExtractor()
+ --clones the network and removes last layers
+  self:removeLastLayers()
 end

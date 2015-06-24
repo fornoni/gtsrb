@@ -17,7 +17,7 @@ local mpNet = torch.class('mpNet', 'twoStagesNet')
 function mpNet:__init(dataset)
   twoStagesNet:__init(dataset) -- calls the base class constructor
   self.connTableDensity=1;
-  self.dropoutP={.4,.4,.4};
+  self.dropoutP={.4,.4,.4};  
 end
 
 
@@ -60,4 +60,14 @@ function mpNet:getModel()
   --    print(conv_nodes[i].output:size())
   --  end
 
+end
+
+--[[removes the layers that are not necessary for feature extraction]]--
+function mpNet:removeLastLayers(featureExtractor)
+  --removes last five layers
+  self.net:remove()
+  self.net:remove()
+  self.net:remove()
+  self.net:remove()
+  self.net:remove()
 end

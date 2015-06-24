@@ -111,9 +111,9 @@ function machine:runExp(trainData,testData)
   local maxEpochs=self.maxEpochs
   for epoch=self.trainedEpochs+1,maxEpochs do
     self.trainedEpochs=epoch
-  
+
     torch.manualSeed(1e6+epoch*1e3+1)
-    
+
     --    if epoch==10 then
     --      self.batchSize=self.trainData:size()
     --      self.optAlgo=lbfgs()
@@ -295,4 +295,53 @@ function machine:getFwdBwdFunc(inputs, targets)
   end
 
   return fwdBwdFunc
+end
+
+
+--[[ Tests the machine
+ARGS:
+- `testData`             : testing dataset object
+]]
+function machine:extractFeats(testData)
+
+  if not self.model.featureExtractor then
+    self.model:toFeatureExtractor()
+    self.model.featureExtractor=true
+  end
+
+  -- local vars
+  local time = sys.clock()
+  local nte=testData:size();
+
+  -- set model to evaluate mode (for modules that differ in training and testing, like Dropout)
+  self.model.net:evaluate()
+
+  local feats=torch.Tensor(nte,self.model.l1_flatsize)
+
+  -- test over test data
+  print('Extracting features, using:')
+  print(self.model.net)
+  for t = 1,nte do
+    -- disp progress
+    xlua.progress(t, nte)
+
+    -- get new sample
+    local input = testData.data[t]
+
+    --converts the data sample to the desired format (to get the desired precision)
+    if self.inputType == 'double' then input = input:double()
+    elseif self.inputType == 'cuda' then input = input:cuda() end
+
+    -- extract the features sample
+    feats[{{t},{}}] = self.model.net:forward(input)
+  end
+
+  -- computes testing time
+  time = sys.clock() - time
+
+  -- prints time taken
+  print(" extraction time = " .. time .. 's')
+  print(" time / sample = " .. (time / nte*1000) .. 'ms\n')
+
+  return feats
 end

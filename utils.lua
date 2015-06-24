@@ -1,5 +1,6 @@
 require 'torch'
 
+
 --[[ Utility function to load the training and testing images, preprocess them and serialize the results to a file ]]
 function geGTSRtData(data_dir)
 
@@ -7,7 +8,7 @@ function geGTSRtData(data_dir)
   local tr_im_dir=data_dir .. '/train/Final_Training/Images'
   local te_im_dir=data_dir .. '/test/Final_Test/Images'
   local te_csv_file=data_dir..'/test/GT-final_test.csv'
-  
+
   --files where to save the post-processed images
   local tr_dat=data_dir .. '/train.dat'
   local te_dat=data_dir .. '/test.dat'
@@ -38,6 +39,45 @@ function geGTSRtData(data_dir)
 
   return trainData,testData
 end
+
+function getFeatDirs(data_dir)
+  local tr_feat_dir = data_dir .. '/train/Final_Training' .. '/Features'
+  local te_feat_dir = data_dir .. '/test/Final_Test/' .. '/Features'
+  --if it doesn't exists it creates the train feature dir
+  if not file_exists(tr_feat_dir) then
+    os.execute("mkdir " .. tr_feat_dir)
+  end
+  --if it doesn't exists it creates the test feature dir
+  if not file_exists(te_feat_dir) then
+    os.execute("mkdir " .. te_feat_dir)
+  end
+
+  return tr_feat_dir,te_feat_dir
+end
+
+
+function extracFeats(convnet, trainData, testData, data_dir)
+  local tr_feat_dir, te_feat_dir = getFeatDirs(data_dir)
+  local te_feat_file = te_feat_dir .. "/"  .. convnet.machineId .. ".feat"
+  local tr_feat_file = tr_feat_dir .. "/"  .. convnet.machineId .. ".feat"
+  --if the training and testing files do not already exist it extracts the features
+  if not file_exists(tr_feat_file) or not file_exists(te_feat_file) then
+    --extract and saves test features
+    testData.data = convnet:extractFeats(testData)
+    torch.save(te_feat_file, testData)
+
+    --extract and saves train features
+    trainData.data = convnet:extractFeats(trainData)
+    torch.save(tr_feat_file, trainData)
+  else
+    --otherwise it simply loads the pre-processed data
+    testData=dataset(torch.load(te_feat_file))
+    trainData=dataset(torch.load(tr_feat_file))
+  end
+  
+  return trainData, testData
+end
+
 
 --[[ Checks if a file exists ]]
 function file_exists(name)
