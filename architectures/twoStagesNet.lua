@@ -46,8 +46,11 @@ function twoStagesNet:__init(dataset)
   self.featureExtractor=false
 end
 
---[[ returns a copy of the network that can be used as a feature extractor ]]--
-function twoStagesNet:toFeatureExtractor()
+--[[ returns a copy of the network that can be used as a feature extractor. this is achieved by removing the last n_layers 
+ARGS:
+- `n_layers`             : the number of layers to be removed from the network to use it as a feture extractor
+]]--
+function twoStagesNet:toFeatureExtractor(n_layers)
  --clones the network and removes last layers
-  self:removeLastLayers()
+  self:removeLastLayers(n_layers)
 end

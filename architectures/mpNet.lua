@@ -62,12 +62,13 @@ function mpNet:getModel()
 
 end
 
---[[removes the layers that are not necessary for feature extraction]]--
-function mpNet:removeLastLayers(featureExtractor)
-  --removes last five layers
-  self.net:remove()
-  self.net:remove()
-  self.net:remove()
-  self.net:remove()
-  self.net:remove()
+--[[removes the last n_layers from the CNN (for feature extraction purposes)
+ARGS:
+- `n_layers`             : the number of layers to be removed from the network to use it as a feture extractor
+]]--
+function mpNet:removeLastLayers(n_layers)
+  --removes the last n_layers
+  for i=1,n_layers do
+    self.net:remove()
+  end
 end

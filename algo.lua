@@ -6,8 +6,13 @@ function min(x,y)
   return (x < y) and x or y
 end
 
---[[ torch7 naive implementation of kNN]]
-function NN(trainData,testData)
+--[[ my Lua/Torch7 implementation of exact kNN. For efficiency, the kNN evaluation is performed in batches.
+ARGS:
+- `k`                     : the number of nearest neighbors to be used
+- `trainData`             : training dataset object
+- `testData`              : testing dataset object
+]]
+function kNN(k,trainData,testData)
 
   -- Creates a confusion matrix object
   local confusion = optim.ConfusionMatrix(trainData.classNames);
@@ -15,6 +20,7 @@ function NN(trainData,testData)
   local nte =testData:size()
   local ntr =trainData:size()
   local d = testData.data:size()[2]
+  local ncla=#(trainData.classNames)
 
   local slice_size=1000
   -- transposes the training data once, for efficiency
@@ -27,8 +33,8 @@ function NN(trainData,testData)
   --  local dotprod=torch.Tensor(slice_size,ntr)
   --  local testSlice = torch.Tensor(slice_size,d)
   --  local te_slice_nrm=torch.Tensor(slice_size)
-  
-  print('NN classification in batches of ' .. slice_size .. ' samples')
+
+  print('exact NN classification in batches of ' .. slice_size .. ' samples')
 
   for i=1,nte,slice_size do
     --[[ calling the garbage collector at the beginning of each epoch seems to avoid huge memory leak problems.
@@ -50,9 +56,8 @@ function NN(trainData,testData)
       --gets the current slice of the testing data
       local true_slice_size=min(nte,i+slice_size-1)-i+1;
       local testSlice=testData.data[{{i,min(nte,i+slice_size-1)},{}}]
-      
+
       -- computes Euclidean distance of the testing slice to the training data in efficient matrix form
-      
       -- first computes the norm of the testing samples
       local te_slice_nrm = torch.sum(torch.pow(testSlice,2),2)
       -- then computes the dot product between the testing slice samples and the training samples
@@ -60,22 +65,42 @@ function NN(trainData,testData)
       -- then combines the different quantities to get D
       local D = tr_nrm:expand(true_slice_size, ntr) + te_slice_nrm:expand(true_slice_size, ntr) - torch.mul(dotprod, 2)
 
-      -- performs 1-nearest neighbor classification:
-      local _,ind = torch.min(D, 2)
+      local ind;
+      
+      -- computes the closest index(es)
+      if k==1 then
+        _,ind = torch.min(D, 2)
+      else
+        _,ind= torch.sort(D,2)
+      end
+
       for j = 1,true_slice_size do
+        -- for each sample performs the kNN prediction
+        local ypred;
+        if k==1 then
+          ypred = trainData.labels[ind[j][1]]
+        else
+          --vector of votes
+          local votes= torch.Tensor(ncla):zero()
+          for h=1,k do
+            local k_samp=ind[j][h]
+            local k_class=trainData.labels[k_samp]
+            votes[k_class] = votes[k_class] +1
+          end
+          _,ypred = torch.max(votes, 1)
+          ypred=ypred[1]
+        end
         --      xlua.progress(i+j-1,nte)
-        local ypred = trainData.labels[ind[j][1]]
         confusion:add(ypred, testData.labels[i+j-1])
       end
     end
-    
+
   end
 
   confusion:updateValids()
   local err_rate = (1 - confusion.totalValid) * 100;
 
   print("\n error rate: " .. err_rate .. "\n")
-
   return err_rate
 end
 

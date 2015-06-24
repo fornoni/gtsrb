@@ -31,7 +31,9 @@ end
 
 --[[ Returns the dimensionality of a dataset, i.e. the resolution of the images it contains]]
 function dataset:dim()
-  return (self.data:size())[{2,-1}]
+  sz=self.data:size();
+  return sz[#sz]
+--  return (self.data:size())[{2,-1}]
 end
 
 --[[ Bulk loads the images into dataset, rescaling all the images to 32x32 converting them to YUV and retaining only the Y component

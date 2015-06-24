@@ -40,6 +40,7 @@ function geGTSRtData(data_dir)
   return trainData,testData
 end
 
+--[[ Utility function that creates training/testing feature dirs and returns their paths]]
 function getFeatDirs(data_dir)
   local tr_feat_dir = data_dir .. '/train/Final_Training' .. '/Features'
   local te_feat_dir = data_dir .. '/test/Final_Test/' .. '/Features'
@@ -55,23 +56,34 @@ function getFeatDirs(data_dir)
   return tr_feat_dir,te_feat_dir
 end
 
-
-function extracFeats(convnet, trainData, testData, data_dir)
+--[[ Utility function to perform feature extraction using a given CNN and save the resulting datasets 
+ARGS:
+- `convnet`              : a machine object (CNN) to be used as a feature extractor  
+- `n_layers`             : the number of layers to be removed from the network to use it as a feture extractor
+- `trainData`            : training dataset object
+- `testData`             : testing dataset object
+- `data_dir`             : the main data directory of GTSR
+]]
+function extracFeats(convnet, n_layers, trainData, testData, data_dir)
   local tr_feat_dir, te_feat_dir = getFeatDirs(data_dir)
-  local te_feat_file = te_feat_dir .. "/"  .. convnet.machineId .. ".feat"
-  local tr_feat_file = tr_feat_dir .. "/"  .. convnet.machineId .. ".feat"
+  local te_feat_file = te_feat_dir .. "/"  .. convnet.machineId .. "_L" .. n_layers .. ".feat"
+  local tr_feat_file = tr_feat_dir .. "/"  .. convnet.machineId .. "_L" .. n_layers .. ".feat"
   --if the training and testing files do not already exist it extracts the features
   if not file_exists(tr_feat_file) or not file_exists(te_feat_file) then
     --extract and saves test features
-    testData.data = convnet:extractFeats(testData)
+    testData.data = convnet:extractFeats(n_layers,testData)
+    print("Saving testing features from "..te_feat_file)
     torch.save(te_feat_file, testData)
 
     --extract and saves train features
-    trainData.data = convnet:extractFeats(trainData)
+    trainData.data = convnet:extractFeats(n_layers,trainData)
+    print("Saving training features from "..tr_feat_file)
     torch.save(tr_feat_file, trainData)
   else
     --otherwise it simply loads the pre-processed data
+    print("Loading testing features from "..te_feat_file)
     testData=dataset(torch.load(te_feat_file))
+    print("Loading training features from "..tr_feat_file)
     trainData=dataset(torch.load(tr_feat_file))
   end
   

@@ -6,8 +6,8 @@ require "utils"
 cmd = torch.CmdLine()
 cmd:text('Options:')
 cmd:option('-arch', 'mpNet', 'specifies which of the architectures to use')
-cmd:option('-epochs', 10, 'the number of training epochs to run the architecture')
-cmd:option('-data', '/home/datasets/GTSR/data', 'specifies the directory where the data is')
+cmd:option('-epochs', 20, 'the number of training epochs to run the architecture')
+cmd:option('-data', '/home/datasets/GTSR2/data', 'specifies the directory where the data is')
 cmd:option('-load', false, 'if true tries to load last convnet and continue the training from there')
 cmd:text()
 opt = cmd:parse(arg or {})
@@ -33,13 +33,14 @@ local function main()
   local model=_G[opt.arch](trainData)
   
   local convnet=machine(trainData,model,results_dir)
+  convnet.maxEpochs=opt.epochs
   if opt.load then
     convnet=convnet:load()
+    convnet.maxEpochs=opt.epochs
     convnet:initLogger()
     print('\nRe-testing convnet')
     convnet:test(testData)
   end
-  convnet.maxEpochs=opt.epochs
   convnet:runExp(trainData,testData)
 end
 

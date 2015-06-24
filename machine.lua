@@ -70,7 +70,7 @@ function machine:__init(trainData, model, logDir, optAlgo)
 
 end
 
---[[ Initializes the logger util ]]
+--[[ Initializes the logger utility ]]
 function machine:initLogger()
   local time = os.date("*t")
   time = time.month .. time.day .. time.hour .. time.min
@@ -94,6 +94,7 @@ function machine:load()
   local modelFile;
   for ep=self.maxEpochs,1,-1 do
     modelFile=self.modelDir .. "/epoch" .. ep .. ".net" ;
+    --    print("trying to load: " ..  modelFile)
     if file_exists(modelFile) then
       break
     end
@@ -253,7 +254,10 @@ function machine:test(testData)
   self.confusion:zero()
 end
 
---[[ Function used to evaluate the network (forward) on some inputs, compute the loss and the gradient vector (backward) accordingly ]]
+--[[ Function used to evaluate the network (forward) on some inputs, compute the loss and the gradient vector (backward) accordingly
+ARGS:
+- `inputs`             : the training data samples to be used by the function
+- `targets`            : the corrisponding labels]]
 function machine:getFwdBwdFunc(inputs, targets)
 
   -- create closure to evaluate f(X) and df/dX
@@ -300,12 +304,13 @@ end
 
 --[[ Tests the machine
 ARGS:
+- `n_layers`             : the number of layers to be removed from the network to use it as a feture extractor
 - `testData`             : testing dataset object
 ]]
-function machine:extractFeats(testData)
+function machine:extractFeats(n_layers,testData)
 
   if not self.model.featureExtractor then
-    self.model:toFeatureExtractor()
+    self.model:toFeatureExtractor(n_layers)
     self.model.featureExtractor=true
   end
 
@@ -316,7 +321,12 @@ function machine:extractFeats(testData)
   -- set model to evaluate mode (for modules that differ in training and testing, like Dropout)
   self.model.net:evaluate()
 
-  local feats=torch.Tensor(nte,self.model.l1_flatsize)
+  -- gets number of output features
+  local lm=self.model.net:listModules()
+  local nf=lm[#lm].output:size()[1]
+
+  -- create a tensor for the features
+  local feats=torch.Tensor(nte,nf)
 
   -- test over test data
   print('Extracting features, using:')
