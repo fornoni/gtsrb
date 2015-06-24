@@ -111,7 +111,9 @@ function machine:runExp(trainData,testData)
   local maxEpochs=self.maxEpochs
   for epoch=self.trainedEpochs+1,maxEpochs do
     self.trainedEpochs=epoch
-
+  
+    torch.manualSeed(1e6+epoch*1e3+1)
+    
     --    if epoch==10 then
     --      self.batchSize=self.trainData:size()
     --      self.optAlgo=lbfgs()
