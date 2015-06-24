@@ -6,7 +6,7 @@ fi
 
 git add *.lua
 git add *.md
-git add *.sh
+git add getData.sh
 git add architectures/twoStagesNet.lua
 git add architectures/mpNet.lua
 git add architectures/tinyNet.lua
