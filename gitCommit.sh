@@ -7,8 +7,9 @@ fi
 git add *.lua
 git add *.md
 git add *.sh
-git add architectures/mpNet.lua
 git add architectures/twoStagesNet.lua
+git add architectures/mpNet.lua
+git add architectures/tinyNet.lua
 
 git commit -m $1
 git push

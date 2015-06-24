@@ -10,11 +10,10 @@ local machine = torch.class('machine')
 --[[ Initialization method, assigning the parameters for the machine a default value
 ARGS:
 - `trainData`            : training dataset object
-- `testData`             : testing dataset object
 - `model`                : model object
 - `optAlgo`              : optimization algorithm object
 ]]
-function machine:__init(trainData,testData, model, logDir, optAlgo)
+function machine:__init(trainData, model, logDir, optAlgo)
 
   --initializes the model
   model:getModel();
@@ -28,8 +27,10 @@ function machine:__init(trainData,testData, model, logDir, optAlgo)
 
   self.model=model;
 
-  self.trainData=trainData;
-  self.testData=testData;
+  -- the total training time for the architecture will be stored here
+  self.totTrainTime=0;
+  -- the total training epochs for the architecture will be stored here
+  self.trainedEpochs=0;
 
   -- Creates a confusion matrix object
   self.confusion = optim.ConfusionMatrix(trainData.classNames);
@@ -42,18 +43,14 @@ function machine:__init(trainData,testData, model, logDir, optAlgo)
   print(self.model.net)
   print(tr_params .."\n")
 
+
+  -- id associated to the machine
+  self.machineId = logDir .. '/' .. tostring(model) ..'_' .. tostring(self.optAlgo) .. '_BS' .. self.batchSize
+  self.modelFile=self.machineId .. "_model.net"
+  self.saveModel=true;
+
   -- logs utils
-  local time = os.date("*t")
-  -- id associated to one execution of the script
-  local id = time.month .. time.day .. time.hour .. time.min
-  local tr_log_f = logDir .. '/' .. tostring(model) ..'_' .. id .. '_train.log'
-  local te_log_f = logDir .. '/' .. tostring(model) ..'_' .. id .. '_test.log'
-  self.trLog = optim.Logger(tr_log_f)
-  self.teLog = optim.Logger(te_log_f)
-  self.trLog:setNames{'arch', 'error rate', 'loss', 'train time'}
-  self.teLog:setNames{'error rate', 'test time'}
-  
-  self.totTrainTime=0;
+  self:initLogger()
 
   -- logs out some information about the network
   self.trLog:add{tostring(self.model.net).."\n"..tr_params, '' , '' , '' }
@@ -66,11 +63,37 @@ function machine:__init(trainData,testData, model, logDir, optAlgo)
 
 end
 
---[[ Runs an experiment by performing a set of epochs of training, each followed by a testing ]]
-function machine:runExp()
+--[[ Initializes the logger util ]]
+function machine:initLogger()
+  local time = os.date("*t")
+  time = time.month .. time.day .. time.hour .. time.min
+  local tr_log_f = self.machineId .. '_' .. time .. '_train.log'
+  local te_log_f = self.machineId .. '_' .. time .. '_test.log'
+  self.trLog = optim.Logger(tr_log_f)
+  self.teLog = optim.Logger(te_log_f)
+  self.trLog:setNames{'arch', 'error rate', 'loss', 'train time'}
+  self.teLog:setNames{'error rate', 'test time'}
+end
+
+function machine:save()
+  print('Saving machine to '.. self.modelFile)
+  torch.save(self.modelFile, self)
+end
+
+function machine:load()
+  print('Loading machine from '.. self.modelFile)
+  return torch.load(self.modelFile)
+end
+
+--[[ Runs an experiment by performing a set of epochs of training, each followed by a testing
+ARGS:
+- `trainData`            : training dataset object
+- `testData`             : testing dataset object
+ ]]
+function machine:runExp(trainData,testData)
   local maxEpochs=self.maxEpochs
-  for epoch=1,maxEpochs do
-    self.epoch=epoch
+  for epoch=self.trainedEpochs+1,maxEpochs do
+    self.trainedEpochs=epoch
 
     --    if epoch==10 then
     --      self.batchSize=self.trainData:size()
@@ -78,21 +101,24 @@ function machine:runExp()
     --    end
     --    self.batchSize=self.batchSize*epoch
 
-    self:train()
-    self:test()
+    self:train(trainData)
+    self:test(testData)
   end
-  
+
   print("Total training time =" .. self.totTrainTime .."s\n\n")
-  
+
 end
 
---[[ Trains the machine for one epoch ]]
-function machine:train()
+--[[ Trains the machine for one epoch
+ARGS:
+- `trainData`            : training dataset object
+]]
+function machine:train(trainData)
 
   print("Training using: " .. tostring(self.optAlgo) .. " with learning rate = "..self.optAlgo.learningRate .. "\n")
 
   local time = sys.clock()
-  local ntr=self.trainData:size()
+  local ntr=trainData:size()
   local loss=0;
 
   -- sets model to training mode
@@ -102,7 +128,7 @@ function machine:train()
   local shuffle = torch.randperm(ntr)
 
   -- trains for one epoch
-  print(" epoch # " .. self.epoch .. '/' .. self.maxEpochs .. ' [batchSize = ' .. self.batchSize .. ']')
+  print(" epoch # " .. self.trainedEpochs .. '/' .. self.maxEpochs .. ' [batchSize = ' .. self.batchSize .. ']')
   for t = 1,ntr,self.batchSize do
 
     -- disp progress
@@ -115,8 +141,8 @@ function machine:train()
     for i = t,math.min(t+self.batchSize-1,ntr) do
 
       -- load new sample
-      local input = self.trainData.data[shuffle[i]]
-      local target = self.trainData.labels[shuffle[i]]
+      local input = trainData.data[shuffle[i]]
+      local target = trainData.labels[shuffle[i]]
 
       --converts the sample to the desired format (to get the desired precision)
       if self.inputType == 'double' then input = input:double()
@@ -127,20 +153,21 @@ function machine:train()
       table.insert(targets, target)
     end
 
-    --    p:start('opt','')
+    --calls the optimization algorithm, passing to it the closure function using the current mini-batch, the current architecture parameters and the optimization params
     local slck,err = self.optAlgo.optimize(self:getFwdBwdFunc(inputs, targets), self.parameters, self.optAlgo)
     loss= loss + err[1]
 
   end
 
-  -- computes 1 epoch training time
+  -- computes 1 epoch training time and adds it to the total training time
   time = sys.clock() - time
   self.totTrainTime=self.totTrainTime+time;
-    
-  -- prints train error rate
+
+  -- prints train error rate and loss
   self.confusion:updateValids()
   local err_rate = (1 - self.confusion.totalValid) * 100;
   print('\n train error rate = '..err_rate..'%')
+  print(' loss = '..loss)
 
   -- prints time taken
   print(" training time = " .. time .. 's')
@@ -151,13 +178,21 @@ function machine:train()
 
   -- next epoch
   self.confusion:zero()
+
+  --if required saves the current model
+  if self.saveModel then
+    self:save()
+  end
 end
 
---[[ Tests the machine ]]
-function machine:test()
+--[[ Tests the machine
+ARGS:
+- `testData`             : testing dataset object
+]]
+function machine:test(testData)
   -- local vars
   local time = sys.clock()
-  local nte=self.testData:size();
+  local nte=testData:size();
 
   -- set model to evaluate mode (for modules that differ in training and testing, like Dropout)
   self.model.net:evaluate()
@@ -169,11 +204,11 @@ function machine:test()
     xlua.progress(t, nte)
 
     -- get new sample
-    local input = self.testData.data[t]
+    local input = testData.data[t]
     --converts the data sample to the desired format (to get the desired precision)
     if self.inputType == 'double' then input = input:double()
     elseif self.inputType == 'cuda' then input = input:cuda() end
-    local target = self.testData.labels[t]
+    local target = testData.labels[t]
 
     -- test sample
     local pred = self.model.net:forward(input)

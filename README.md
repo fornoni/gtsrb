@@ -9,7 +9,7 @@ Main pre-requisite: torch7. Additional pre-requisites for the download script: b
 1. Clone the repository
 2. Download and unpack the data, using:
 	`$ getData.sh some_dir`
-   where some_dir is a directory where you want the dataset to be downloaded / unzipped
+   where some_dir is a directory in which you want the dataset to be downloaded / unzipped
 3. Run the Convolutional Neural Network, using:
 	`$ th main.lua -data some_dir`
 

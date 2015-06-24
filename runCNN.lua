@@ -6,17 +6,20 @@ require "utils"
 cmd = torch.CmdLine()
 cmd:text('Options:')
 cmd:option('-arch', 'mpNet', 'specifies which of the architectures to use')
+cmd:option('-epochs', 10, 'the number of training epochs to run the architecture')
 cmd:option('-data', '/home/datasets/GTSR/data', 'specifies the directory where the data is')
+cmd:option('-load', false, 'if true tries to load last convnet and continue the training from there')
 cmd:text()
 opt = cmd:parse(arg or {})
 
 --selects which architecture to use
+print("Architecture requested: "..opt.arch)
 require("architectures." .. opt.arch)
 
 local function main()
   -- sets GTSR data folders
   local data_dir=opt.data
-  local log_dir = data_dir .. '/results'
+  local results_dir = data_dir .. '/results'
 
   -- gets the training and testing data
   local trainData,testData=geGTSRtData(data_dir)
@@ -26,12 +29,18 @@ local function main()
   torch.setnumthreads(2)
   torch.setdefaulttensortype('torch.FloatTensor')
   
-  -- instantiates a convnet model
-  local model=mpNet(trainData)
+  -- instantiates the specified convnet model
+  local model=_G[opt.arch](trainData)
   
-  local convnet=machine(trainData,testData,model,log_dir)
-  convnet.maxEpochs=100
-  convnet:runExp()
+  local convnet=machine(trainData,model,results_dir)
+  if opt.load then
+    convnet=convnet:load()
+    convnet:initLogger()
+    print('\nRe-testing convnet')
+    convnet:test(testData)
+  end
+  convnet.maxEpochs=opt.epochs
+  convnet:runExp(trainData,testData)
 end
 
 main()
