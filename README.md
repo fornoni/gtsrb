@@ -18,8 +18,8 @@ Main pre-requisite: torch7. Additional pre-requisites for the download script: b
 4. After a CNN has been trained it is also possible to use the last learned model as a feature extractor, together with a simple NN classifier, to produce the final classification.
    The feature extraction + NN classification can be achieved using:
    `$ th runNN.lua -data some_dir -epochs n_epochs -arch mpNet -nl n_layers`   
-   where n_layers specifies the number of *non-convolutional* layers to be removed from the CNN to produce a feature extractor, while the other parameters have the same meaning as before
-   It is also possible to evaluate the performance the pre-processed image features when directly fed as input to the NN classifier. This can be achieved using the '-orig' option.
+   where n_layers specifies the number of *non-convolutional* layers to be removed from the CNN to produce the feature extractor, while the other parameters have the same meaning as before
+   It is also possible to evaluate the performance of the pre-processed image features when directly fed as input to the NN classifier. This can be achieved using the '-orig' option.
    
 ## Goal
 
