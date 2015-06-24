@@ -1,5 +1,6 @@
 require 'torch'
 require 'xlua'
+require "utils"
 
 
 --p=xlua.Profiler();
@@ -45,11 +46,17 @@ function machine:__init(trainData, model, logDir, optAlgo)
 
 
   -- id associated to the machine
-  self.machineId = logDir .. '/' .. tostring(model) ..'_' .. tostring(self.optAlgo) .. '_BS' .. self.batchSize
-  self.modelFile=self.machineId .. "_model.net"
-  self.saveModel=true;
+  self.machineId = tostring(model) ..'_' .. tostring(self.optAlgo) .. '_BS' .. self.batchSize
+
 
   -- logs utils
+  self.saveModel=true;
+  self.logDir=logDir;
+  self.modelDir= logDir .. '/' .. self.machineId .. "_models"
+  if self.saveModel and not file_exists(self.modelDir) then
+    os.execute("mkdir " .. self.modelDir)
+  end
+
   self:initLogger()
 
   -- logs out some information about the network
@@ -67,22 +74,32 @@ end
 function machine:initLogger()
   local time = os.date("*t")
   time = time.month .. time.day .. time.hour .. time.min
-  local tr_log_f = self.machineId .. '_' .. time .. '_train.log'
-  local te_log_f = self.machineId .. '_' .. time .. '_test.log'
+  local tr_log_f = self.logDir .. '/' .. self.machineId .. '_' .. time .. '_train.log'
+  local te_log_f = self.logDir .. '/' .. self.machineId .. '_' .. time .. '_test.log'
   self.trLog = optim.Logger(tr_log_f)
   self.teLog = optim.Logger(te_log_f)
   self.trLog:setNames{'arch', 'error rate', 'loss', 'train time'}
   self.teLog:setNames{'error rate', 'test time'}
 end
 
+--[[saves the machine current status]]
 function machine:save()
-  print('Saving machine to '.. self.modelFile)
-  torch.save(self.modelFile, self)
+  local modelFile= self.modelDir .. "/epoch" .. self.trainedEpochs .. ".net" ;
+  print('Saving machine to '.. modelFile)
+  torch.save(modelFile, self)
 end
 
+--[[loads the machine in its last saved status]]
 function machine:load()
-  print('Loading machine from '.. self.modelFile)
-  return torch.load(self.modelFile)
+  local modelFile;
+  for ep=self.maxEpochs,1,-1 do
+    modelFile=self.modelDir .. "/epoch" .. ep .. ".net" ;
+    if file_exists(modelFile) then
+      break
+    end
+  end
+  print('Loading machine from '.. modelFile)
+  return torch.load(modelFile)
 end
 
 --[[ Runs an experiment by performing a set of epochs of training, each followed by a testing
