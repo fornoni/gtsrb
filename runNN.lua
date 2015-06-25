@@ -9,6 +9,8 @@ cmd:option('-arch', 'mpNet', 'specifies which of the architectures to use')
 cmd:option('-epochs', 100, 'the number of training epochs to run the architecture')
 cmd:option('-data', '/home/datasets/GTSR2/data', 'specifies the directory where the data is')
 cmd:option('-nl', 3, 'specifies the number of *non-convolutional* layers to be removed from the CNN to produce a feature extractor')
+cmd:option('-k', 1, 'the number of nearest neighbors to be considered for classification')
+cmd:option('-bs', 1000, 'the size of the batch of samples classified at once by the kNN algorithm')
 cmd:option('-orig', false, 'if true, the pre-processed image features are directly fed to the NN classifier')
 cmd:text()
 opt = cmd:parse(arg or {})
@@ -26,7 +28,7 @@ local function main()
     trainData.data=trainData.data:reshape(trainData:size(),trainData:dim()*trainData:dim())
     testData.data=testData.data:reshape(testData:size(),testData:dim()*testData:dim())
     print('\nTesting, using a Nearest Neighbor on pre-processed input images:')
-    kNN(1,trainData,testData)
+    kNN(opt.k,trainData,testData,opt.bs)
   else
     --selects which architecture to use
     print("Architecture requested: "..opt.arch)
@@ -47,7 +49,7 @@ local function main()
     trainData,testData = extracFeats(convnet, opt.nl, trainData, testData, data_dir)
     print('\nTesting, using a Nearest Neighbor approach on features extracted using the CNN')
 
-    kNN(1,trainData,testData)
+    kNN(opt.k,trainData,testData,opt.bs)
   end
 end
 

@@ -8,16 +8,22 @@ Main pre-requisite: torch7. Additional pre-requisites for the download script: b
 
 1. Clone the repository
 2. Download and unpack the data, using:
+
 	`$ getData.sh some_dir`
+
    where some_dir is a directory in which you want the dataset to be downloaded / unzipped
 3. Run the Convolutional Neural Network (CNN), using:
+
 	`$ th runCNN.lua -data some_dir -epochs n_epochs -arch mpNet`
+
    where n_epochs is the total number of training epochs desired and arch is the type of architecture desired (for the moment only mpNet, or tinyNet).
    It is possible to resume the training of a partially trained network by adding the option '-load'. In this case the framework will load the last 
    saved network of desired type and continue the training until the specified number of training epochs is reached.
 4. After a CNN has been trained it is also possible to use the last learned model as a feature extractor, together with a simple NN classifier, to produce the final classification.
    The feature extraction + NN classification can be achieved using:
+
    `$ th runNN.lua -data some_dir -epochs n_epochs -arch mpNet -nl n_layers`   
+   
    where n_layers specifies the number of *non-convolutional* layers to be removed from the CNN to produce the feature extractor, while the other parameters have the same meaning as before.
    It is also possible to evaluate the performance of the pre-processed image features when directly fed as input to the NN classifier. This can be achieved using the '-orig' option.
    

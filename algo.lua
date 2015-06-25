@@ -12,7 +12,7 @@ ARGS:
 - `trainData`             : training dataset object
 - `testData`              : testing dataset object
 ]]
-function kNN(k,trainData,testData)
+function kNN(k,trainData,testData, batchSize)
 
   -- Creates a confusion matrix object
   local confusion = optim.ConfusionMatrix(trainData.classNames);
@@ -22,31 +22,30 @@ function kNN(k,trainData,testData)
   local d = testData.data:size()[2]
   local ncla=#(trainData.classNames)
 
-  local slice_size=1000
   -- transposes the training data once, for efficiency
   local tr_data = trainData.data:transpose(1,2)
   -- computes the norm of training features
   local tr_nrm =torch.sum(torch.pow(trainData.data,2),2):transpose(1,2)
 
   --  local true_slice_size, D, dotprod, testSlice, te_slice_nrm
-  --  local D=torch.Tensor(slice_size,ntr)
-  --  local dotprod=torch.Tensor(slice_size,ntr)
-  --  local testSlice = torch.Tensor(slice_size,d)
-  --  local te_slice_nrm=torch.Tensor(slice_size)
+  --  local D=torch.Tensor(batchSize,ntr)
+  --  local dotprod=torch.Tensor(batchSize,ntr)
+  --  local testSlice = torch.Tensor(batchSize,d)
+  --  local te_slice_nrm=torch.Tensor(batchSize)
 
-  print('exact NN classification in batches of ' .. slice_size .. ' samples')
+  print('exact ' .. k .. '-NN classification in batches of ' .. batchSize .. ' samples')
 
-  for i=1,nte,slice_size do
+  for i=1,nte,batchSize do
     --[[ calling the garbage collector at the beginning of each epoch seems to avoid huge memory leak problems.
     I don't really understand why this is necesary, as the variables are declared as "local", in a specific block of code
     and they go out out of scope at the end of each loop.
     ]] 
     collectgarbage()
 
-    xlua.progress(torch.ceil(i/slice_size), torch.round(nte/slice_size))
+    xlua.progress(torch.ceil(i/batchSize), torch.round(nte/batchSize))
 
     -- first test using iterative method: too slow
-    --    print("doing " .. torch.ceil(i/slice_size) .. "/" .. torch.round(nte/slice_size))
+    --    print("doing " .. torch.ceil(i/batchSize) .. "/" .. torch.round(nte/batchSize))
     --    local d=torch.Tensor(ntr):zero()
     --    for j=1,ntr do
     --      d[j]=torch.sum(torch.pow((testData.data[i] - trainData.data[j]),2))
@@ -54,8 +53,8 @@ function kNN(k,trainData,testData)
 
     do
       --gets the current slice of the testing data
-      local true_slice_size=min(nte,i+slice_size-1)-i+1;
-      local testSlice=testData.data[{{i,min(nte,i+slice_size-1)},{}}]
+      local true_slice_size=min(nte,i+batchSize-1)-i+1;
+      local testSlice=testData.data[{{i,min(nte,i+batchSize-1)},{}}]
 
       -- computes Euclidean distance of the testing slice to the training data in efficient matrix form
       -- first computes the norm of the testing samples
