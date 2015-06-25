@@ -99,6 +99,7 @@ function dataset:loadImgs(imgs_dir,images_list_file)
   print 'Loading images..'
 
   --it goes over the file tables and loads the corresponding images into the self.data field:
+  -- images are converted to YUV and only the Y component is retained
   for i,file in ipairs(self.fileNames) do
     -- loads each image
     print( 'loading ' .. i ..'-th img: ' .. file )
@@ -109,9 +110,8 @@ end
 
 
 --[[ Post-processes the images by:
-      1) converting them to YUV and retaining only the Y component
-      2) performing global whitening (zero mean and unit variance) on the pixel distribution
-      3) performing local spatial contrastive normalization 
+      1) performing global whitening (zero mean and unit variance) on the pixel distribution
+      2) performing local spatial contrastive normalization 
 ARGS:
 - `mean`     : the mean to be used to whiten the pixel distribution; if not specified it is computed from the data
 - `std`      : the mean to be used to whiten the pixel distribution; if not specified it is computed from the data
