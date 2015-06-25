@@ -4,7 +4,7 @@ a.k.a German Traffic Sign Recognition Benchmark :de: :no_entry: :no_bicycles:
 :no_entry_sign: ...
 
 ## Usage
-Main pre-requisite: torch7. Additional pre-requisites for the download script: bash, wget, unzip. 
+Main pre-requisite: torch7 with 'nn', image', 'optim' and 'xlua' packages. Additional pre-requisites for the download script: bash, wget, unzip. 
 
 1. Clone the repository
 2. Download and unpack the data, using:
