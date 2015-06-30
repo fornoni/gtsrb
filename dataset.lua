@@ -5,15 +5,6 @@ require 'csv'
 
 --[[ Class used to represent a dataset]]
 local dataset = torch.class("dataset")
---dataset = {}
---dataset.__index = dataset
---setmetatable(dataset, {
---  __call = function (cls, ...)
---    local self = setmetatable({}, cls)
---    self:__init(...)
---    return self
---  end,
---})
 
 --[[ Initializes a new instance of a dataset]]
 function dataset:__init(obj)

@@ -106,7 +106,6 @@ end
 
 --[[ Class representing a sgd algorithm]]
 local sgd = torch.class('sgd')
---sgd = {}
 --[[ Initialization method, assigning the parameters for the algorithm a default value
 ARGS:
 - `learningRate`            : learning rate
@@ -120,6 +119,10 @@ function sgd:__init(learningRate,weightDecay,momentum,learningRateDecay)
   self.momentum = momentum or 0;
   self.learningRateDecay= learningRateDecay or 1e-7;
   self.optimize = optim.sgd;
+end
+--[[ Returns a string representing the hyperparameters of the object ]]--
+function sgd:parstostring()
+  return "LR"..self.learningRate .. "_LRD" .. self.learningRateDecay .. "_MM"..self.momentum .."_WD"..self.weightDecay
 end
 
 
@@ -136,4 +139,9 @@ function lbfgs:__init(learningRate,maxIter,nCorrection)
   self.maxIter = maxIter or 2;
   self.nCorrection = nCorrection or 10;
   self.optimize = optim.lbfgs;
+end
+
+--[[ Returns a string representing the hyperparameters of the object ]]--
+function lbfgs:parstostring()
+  return "LR"..self.learningRate .. "_MI" .. self.maxIter .. "_NC"..self.nCorrection
 end

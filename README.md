@@ -14,9 +14,9 @@ Main pre-requisite: torch7 with 'nn', image', 'optim' and 'xlua' packages. Addit
    where some_dir is a directory in which you want the dataset to be downloaded / unzipped
 3. Run the Convolutional Neural Network (CNN), using:
 
-	`$ th runCNN.lua -data some_dir -epochs n_epochs -arch mpNet`
+	`$ th runCNN.lua -data some_dir -epochs n_epochs -arch mpNet -lr learning_rate -decay learning_rate_decay`
 
-   where n_epochs is the total number of training epochs desired and arch is the type of architecture desired (for the moment only mpNet, or tinyNet).
+   where n_epochs is the total number of training epochs desired, arch is the type of architecture desired (tinyNet, mpNet, msNet, moNet), learning_rate is the learning rate and learning_rate_decay is the learning rate decay.
    It is possible to resume the training of a partially trained network by adding the option '-load'. In this case the framework will load the last 
    saved network of desired type and continue the training until the specified number of training epochs is reached.
 4. After a CNN has been trained it is also possible to use the last learned model as a feature extractor, together with a simple NN classifier, to produce the final classification.

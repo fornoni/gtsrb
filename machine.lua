@@ -14,12 +14,12 @@ ARGS:
 - `model`                : model object
 - `optAlgo`              : optimization algorithm object
 ]]
-function machine:__init(trainData, model, logDir, optAlgo)
+function machine:__init(trainData, model, logDir)
 
   --initializes the model
   model:getModel();
 
-  self.optAlgo=optAlgo or sgd();
+
   self.maxEpochs= 10;
   self.batchSize=1;
 
@@ -33,6 +33,9 @@ function machine:__init(trainData, model, logDir, optAlgo)
   -- the total training epochs for the architecture will be stored here
   self.trainedEpochs=0;
 
+  print(self.model.net)
+  --print(self.model.net:listModules())
+
   -- Creates a confusion matrix object
   self.confusion = optim.ConfusionMatrix(trainData.classNames);
   -- Retrieves parameters and gradients (these are tensors that will be automatically updated during training)
@@ -41,18 +44,22 @@ function machine:__init(trainData, model, logDir, optAlgo)
   -- prints out some information about the network
   local tr_params = "# of trainable parameters: " .. (self.gradParameters:size())[1]
   print("\nCNN using architecture: " ..tostring(model).."")
-  print(self.model.net)
+  --  print(self.model.net)
   print(tr_params .."\n")
+
+  --  self.opt_str="Training using: " .. tostring(self.model.optAlgo) .. ", with parameters: " .. self.model.optAlgo:parstostring "\n";
+  self.opt_str="Training using: " .. tostring(self.model.optAlgo) .. " with:\n learning rate = "..self.model.optAlgo.learningRate .. "\n learning rate decay = " .. self.model.optAlgo.learningRateDecay .. "\n momentum = "..self.model.optAlgo.momentum .."\n weight decay = "..self.model.optAlgo.weightDecay .. "\n";
 
 
   -- id associated to the machine
-  self.machineId = tostring(model) ..'_' .. tostring(self.optAlgo) .. '_BS' .. self.batchSize
+  self.machineId = tostring(model) ..'_' .. tostring(self.model.optAlgo) .. '_BS' .. self.batchSize
 
 
   -- logs utils
   self.saveModel=true;
   self.logDir=logDir;
   self.modelDir= logDir .. '/' .. self.machineId .. "_models"
+
   if self.saveModel and not file_exists(self.modelDir) then
     os.execute("mkdir " .. self.modelDir)
   end
@@ -60,7 +67,7 @@ function machine:__init(trainData, model, logDir, optAlgo)
   self:initLogger()
 
   -- logs out some information about the network
-  self.trLog:add{tostring(self.model.net).."\n"..tr_params, '' , '' , '' }
+  self.trLog:add{tostring(self.model.net).."\n"..tr_params .."\n" .. self.opt_str, '' , '' , '' }
 
   -- If necessary it optimizes the machine for running on cuda
   if self.inputType == 'cuda' then
@@ -82,18 +89,24 @@ function machine:initLogger()
   self.teLog:setNames{'error rate', 'test time'}
 end
 
+
+function machine:getModelFile(epoch)
+  local epoch = epoch or self.trainedEpochs;
+  return self.modelDir .. "/" ..  self.model.optAlgo:parstostring() .. "_epoch" .. epoch .. ".net" ;
+end
+
 --[[saves the machine current status]]
 function machine:save()
-  local modelFile= self.modelDir .. "/epoch" .. self.trainedEpochs .. ".net" ;
-  print('Saving machine to '.. modelFile)
-  torch.save(modelFile, self)
+  print('Saving machine to '.. self:getModelFile())
+  torch.save(self:getModelFile(), self)
 end
 
 --[[loads the machine in its last saved status]]
 function machine:load()
   local modelFile;
   for ep=self.maxEpochs,1,-1 do
-    modelFile=self.modelDir .. "/epoch" .. ep .. ".net" ;
+    modelFile=self:getModelFile(ep)
+    --self.modelDir .. "/epoch" .. ep .. ".net" ;
     --    print("trying to load: " ..  modelFile)
     if file_exists(modelFile) then
       break
@@ -108,7 +121,9 @@ ARGS:
 - `trainData`            : training dataset object
 - `testData`             : testing dataset object
  ]]
-function machine:runExp(trainData,testData)
+function machine:runExp(trainData,testData,maxTrain)
+
+  maxTrain= maxTrain or math.huge
   local maxEpochs=self.maxEpochs
   for epoch=self.trainedEpochs+1,maxEpochs do
     self.trainedEpochs=epoch
@@ -117,11 +132,11 @@ function machine:runExp(trainData,testData)
 
     --    if epoch==10 then
     --      self.batchSize=self.trainData:size()
-    --      self.optAlgo=lbfgs()
+    --      self.model.optAlgo=lbfgs()
     --    end
     --    self.batchSize=self.batchSize*epoch
 
-    self:train(trainData)
+    self:train(trainData,maxTrain)
     self:test(testData)
   end
 
@@ -133,12 +148,14 @@ end
 ARGS:
 - `trainData`            : training dataset object
 ]]
-function machine:train(trainData)
+function machine:train(trainData,maxTrain)
 
-  print("Training using: " .. tostring(self.optAlgo) .. " with learning rate = "..self.optAlgo.learningRate .. "\n")
+  print(self.opt_str)
+
+  maxTrain= maxTrain or math.huge
 
   local time = sys.clock()
-  local ntr=trainData:size()
+  local ntr=math.min(trainData:size(),maxTrain)
   local loss=0;
 
   -- sets model to training mode
@@ -174,7 +191,7 @@ function machine:train(trainData)
     end
 
     --calls the optimization algorithm, passing to it the closure function using the current mini-batch, the current architecture parameters and the optimization params
-    local slck,err = self.optAlgo.optimize(self:getFwdBwdFunc(inputs, targets), self.parameters, self.optAlgo)
+    local slck,err = self.model.optAlgo.optimize(self:getFwdBwdFunc(inputs, targets), self.parameters, self.model.optAlgo)
     loss= loss + err[1]
 
   end
@@ -304,11 +321,13 @@ end
 
 --[[ Tests the machine
 ARGS:
-- `n_layers`             : the number of layers to be removed from the network to use it as a feture extractor
 - `testData`             : testing dataset object
+- `n_layers`             : the number of layers to be removed from the network to use it as a feture extractor
 ]]
-function machine:extractFeats(n_layers,testData)
+function machine:extractFeats(testData, n_layers)
 
+  n_layers =  n_layers or self.model.nFeatsLayers
+  
   if not self.model.featureExtractor then
     self.model:toFeatureExtractor(n_layers)
     self.model.featureExtractor=true

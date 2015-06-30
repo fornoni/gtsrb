@@ -59,25 +59,30 @@ end
 --[[ Utility function to perform feature extraction using a given CNN and save the resulting datasets 
 ARGS:
 - `convnet`              : a machine object (CNN) to be used as a feature extractor  
-- `n_layers`             : the number of layers to be removed from the network to use it as a feture extractor
 - `trainData`            : training dataset object
 - `testData`             : testing dataset object
 - `data_dir`             : the main data directory of GTSR
+- `n_layers`             : the number of layers to be removed from the network to use it as a feture extractor
 ]]
-function extracFeats(convnet, n_layers, trainData, testData, data_dir)
+function extracFeats(convnet, trainData, testData, data_dir, n_layers)
+
+  n_layers =  n_layers or convnet.model.nFeatsLayers
+  
   local tr_feat_dir, te_feat_dir = getFeatDirs(data_dir)
-  local te_feat_file = te_feat_dir .. "/"  .. convnet.machineId .. "_L" .. n_layers .. ".feat"
-  local tr_feat_file = tr_feat_dir .. "/"  .. convnet.machineId .. "_L" .. n_layers .. ".feat"
+  local feat_fname = convnet.machineId .. "_" .. convnet.model.optAlgo:parstostring() .. "_L" .. n_layers .. "_epoch"  .. convnet.trainedEpochs .. ".feat"
+  local te_feat_file = te_feat_dir .. "/"  .. feat_fname
+  local tr_feat_file = tr_feat_dir .. "/"  .. feat_fname
+  
   --if the training and testing files do not already exist it extracts the features
   if not file_exists(tr_feat_file) or not file_exists(te_feat_file) then
     --extract and saves test features
-    testData.data = convnet:extractFeats(n_layers,testData)
-    print("Saving testing features from "..te_feat_file)
+    testData.data = convnet:extractFeats(testData,n_layers)
+    print("Saving testing features to "..te_feat_file)
     torch.save(te_feat_file, testData)
 
     --extract and saves train features
-    trainData.data = convnet:extractFeats(n_layers,trainData)
-    print("Saving training features from "..tr_feat_file)
+    trainData.data = convnet:extractFeats(trainData,n_layers)
+    print("Saving training features to "..tr_feat_file)
     torch.save(tr_feat_file, trainData)
   else
     --otherwise it simply loads the pre-processed data
