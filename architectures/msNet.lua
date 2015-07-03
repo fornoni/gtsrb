@@ -43,19 +43,6 @@ function msNet:getModel()
   snd:add(nn.SpatialMaxPooling(self.poolsize[2],self.poolsize[2],self.poolsize[2],self.poolsize[2]))
   snd:add(nn.View(self.l1_flatsize))
 
-  --    local frst = nn.Sequential()
-  --    -- second convolutional stage, with dropout, rectification non-linearity and max pooling
-  --    -- if densely connected it uses SpatialConvolutionMM, otherwise it uses a random connection table
-  --    if(self.connTableDensity==1) then
-  --      frst:add(nn.SpatialConvolutionMM(self.nmaps[1], self.nmaps[2], self.filtsize[2], self.filtsize[2]))
-  --    else
-  --      local table = nn.tables.random(self.nmaps[1],self.nmaps[2],torch.round(self.nmaps[1]*self.connTableDensity))
-  --      frst:add(nn.SpatialConvolutionMap(table, self.filtsize[2], self.filtsize[2]))
-  --    end
-  --    frst:add(nn.ReLU())
-  --    frst:add(nn.SpatialMaxPooling(self.poolsize[2],self.poolsize[2],self.poolsize[2],self.poolsize[2]))
-  --    frst:add(nn.Dropout(self.dropoutP[2]))
-
   -- creates the (flattened) view of the output of the first convolutional stage that will be fed to the classifier
   local frst = nn.View(self.l0_flatsize)
 

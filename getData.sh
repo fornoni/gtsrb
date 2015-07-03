@@ -18,6 +18,7 @@ if [ ! -d "${data_dir}" ]; then
   fi
 fi
 
+cwd=`pwd`
 cd ${data_dir}
 
 if [ ! -d train ]; then

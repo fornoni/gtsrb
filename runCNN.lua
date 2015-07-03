@@ -12,8 +12,9 @@ local function main()
   cmd:option('-epochs', 20, 'the number of training epochs to run the architecture')
   cmd:option('-data', '/home/datasets/GTSR3', 'specifies the directory where the data is')
   cmd:option('-load', false, 'if true tries to load last convnet and continue the training from there')
-  cmd:option('-lr', -1, 'if true tries to load last convnet and continue the training from there')
-  cmd:option('-decay',  -1, 'if true tries to load last convnet and continue the training from there')
+  cmd:option('-lr', -1, 'sets the learning rate')
+  cmd:option('-decay',  -1, 'sets the learning rate decay')
+  cmd:option('-mm',  -1, 'sets the momentum')
   cmd:text()
   local opt = cmd:parse(arg or {})
 
@@ -62,6 +63,9 @@ local function main()
   end
   if opt.decay~=-1 then
     model.optAlgo.learningRateDecay = opt.decay
+  end
+  if opt.mm~=-1 then
+    model.optAlgo.momentum = opt.mm
   end
 
   -- instantiate a new learning machine --
